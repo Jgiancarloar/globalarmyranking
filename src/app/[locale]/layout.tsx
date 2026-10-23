@@ -1,8 +1,10 @@
+
 import { Suspense, type ReactNode } from "react";
 import { notFound } from "next/navigation";
 
 import Navbar from "@/components/shared/Navbar";
 import Footer from "@/components/shared/Footer";
+import CookieConsent from "@/components/shared/CookieConsent";
 import { isLocale } from "@/i18n/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -36,9 +38,7 @@ async function AuthenticatedNavbar({
 }
 
 function NavbarFallback() {
-  return (
-    <div className="h-16" aria-hidden="true" />
-  );
+  return <div className="h-16" aria-hidden="true" />;
 }
 
 function LocaleContent({
@@ -56,6 +56,8 @@ function LocaleContent({
       <Suspense fallback={null}>
         <Footer locale={locale} />
       </Suspense>
+
+      <CookieConsent locale={locale} />
     </>
   );
 }

@@ -59,15 +59,15 @@ export default async function AccountPage({ params }: Props) {
     .eq("id", user.id)
     .maybeSingle();
 
-  const { data: countriesData, error: countriesError } =
-    await supabase
-      .from("countries")
-      .select("code, name_en, name_es, flag_emoji")
-      .eq("is_active", true)
-      .order("name_en");
+  const { data: countriesData, error: countriesError } = await supabase
+    .from("countries")
+    .select("code, name_en, name_es, flag_emoji")
+    .eq("is_active", true)
+    .order("name_en");
 
   const countries: Country[] = countriesData ?? [];
 
+  // Historial: mostramos como máximo los últimos 20 votos.
   const { data: votesData, error: votesError } = await supabase
     .from("votes")
     .select("id, country_code, vote_type, created_at")
@@ -76,6 +76,19 @@ export default async function AccountPage({ params }: Props) {
     .limit(20);
 
   const votes: Vote[] = votesData ?? [];
+
+  // Bloqueo del país: comprobar la existencia de cualquier voto,
+  // independientemente del límite del historial.
+  const { data: firstVote, error: firstVoteError } = await supabase
+    .from("votes")
+    .select("id")
+    .eq("user_id", user.id)
+    .limit(1)
+    .maybeSingle();
+
+  // Si no podemos verificar los votos, bloqueamos el selector
+  // de forma conservadora hasta que se pueda comprobar.
+  const hasVoted = Boolean(firstVote) || Boolean(firstVoteError);
 
   if (profileError) {
     console.error("Error loading profile:", profileError);
@@ -87,6 +100,10 @@ export default async function AccountPage({ params }: Props) {
 
   if (votesError) {
     console.error("Error loading vote history:", votesError);
+  }
+
+  if (firstVoteError) {
+    console.error("Error checking whether user has voted:", firstVoteError);
   }
 
   const initialName =
@@ -141,7 +158,7 @@ export default async function AccountPage({ params }: Props) {
         </Link>
 
         <div className="mt-8 overflow-hidden rounded-3xl border border-white/10 bg-[#13101e]">
-          {/* Header */}
+          {/* Encabezado */}
           <div className="border-b border-white/[0.08] p-6 sm:p-9">
             <div className="flex items-center gap-4">
               <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-violet-300/20 bg-violet-400/10 text-violet-300">
@@ -162,7 +179,7 @@ export default async function AccountPage({ params }: Props) {
             </div>
           </div>
 
-          {/* Personal information */}
+          {/* Información personal */}
           <div className="p-6 sm:p-9">
             <div className="mb-7">
               <h2 className="text-lg font-semibold">
@@ -196,11 +213,12 @@ export default async function AccountPage({ params }: Props) {
                 initialAvatarUrl={initialAvatarUrl}
                 userId={user.id}
                 countries={countries}
+                hasVoted={hasVoted}
               />
             )}
           </div>
 
-          {/* Vote history */}
+          {/* Historial de votos */}
           <div className="border-t border-white/[0.08] p-6 sm:p-9">
             <div className="flex items-start gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-violet-300/20 bg-violet-400/10 text-violet-300">
@@ -318,7 +336,7 @@ export default async function AccountPage({ params }: Props) {
             )}
           </div>
 
-          {/* Session */}
+          {/* Sesión */}
           <div className="border-t border-white/[0.08] p-6 sm:p-9">
             <h2 className="text-lg font-semibold">
               {isSpanish ? "Sesión" : "Session"}

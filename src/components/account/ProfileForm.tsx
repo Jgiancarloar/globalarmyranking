@@ -18,15 +18,16 @@ import {
     ChevronDown,
     CheckCircle2,
     AlertCircle,
-    LockKeyhole,
-    ShieldCheck,
     Camera,
     LoaderCircle,
+    Trash2,
+    ShieldCheck,
 } from "lucide-react";
 
 import {
     saveProfile,
     saveAvatarUrl,
+    deleteMyAccount,
 } from "@/app/[locale]/account/actions";
 import { createClient } from "@/lib/supabase/client";
 
@@ -45,6 +46,7 @@ type Props = {
     initialAvatarUrl: string | null;
     userId: string;
     countries: Country[];
+    hasVoted: boolean;
 };
 
 type Feedback = {
@@ -68,6 +70,7 @@ export default function ProfileForm({
     initialAvatarUrl,
     userId,
     countries,
+    hasVoted,
 }: Props) {
     const isSpanish = locale === "es";
     const router = useRouter();
@@ -86,17 +89,22 @@ export default function ProfileForm({
 
     const [loading, setLoading] = useState(false);
     const [avatarLoading, setAvatarLoading] = useState(false);
+    const [deleteLoading, setDeleteLoading] = useState(false);
+    const [deleteConfirmation, setDeleteConfirmation] = useState("");
     const [feedback, setFeedback] = useState<Feedback>(null);
 
-    const countryLocked = Boolean(savedCountry);
-    const countryChosen = Boolean(countryCode);
+    // Si ya votó, no permitimos que el formulario considere
+    // el país como un campo editable.
+    const effectiveCountryCode = hasVoted
+        ? initialCountry
+        : countryCode;
 
     const hasProfileChanges =
         displayName.trim() !== savedName ||
-        countryCode !== savedCountry;
+        effectiveCountryCode !== savedCountry;
 
     const hasChanges = hasProfileChanges || Boolean(selectedFile);
-    const isSaving = loading || avatarLoading;
+    const isSaving = loading || avatarLoading || deleteLoading;
 
     useEffect(() => {
         setDisplayName(initialName);
@@ -106,6 +114,15 @@ export default function ProfileForm({
         setAvatarUrl(initialAvatarUrl);
         setFeedback(null);
     }, [initialName, initialCountry, initialAvatarUrl]);
+
+    // Si la cuenta ya votó, sincronizamos el selector con el país
+    // que devuelve el servidor.
+    useEffect(() => {
+        if (hasVoted) {
+            setCountryCode(initialCountry);
+            setSavedCountry(initialCountry);
+        }
+    }, [hasVoted, initialCountry]);
 
     useEffect(() => {
         return () => {
@@ -121,7 +138,7 @@ export default function ProfileForm({
 
         const timeoutId = window.setTimeout(() => {
             setFeedback(null);
-        }, 5000);
+        }, 7000);
 
         return () => window.clearTimeout(timeoutId);
     }, [feedback]);
@@ -200,34 +217,9 @@ export default function ProfileForm({
     function handleCountryChange(
         event: ChangeEvent<HTMLSelectElement>,
     ) {
-        const nextCountry = event.target.value;
+        if (hasVoted) return;
 
-        if (!nextCountry || nextCountry === countryCode) return;
-
-        if (countryLocked || countryChosen) return;
-
-        const country = countries.find(
-            (item) => item.code === nextCountry,
-        );
-
-        const countryName = country
-            ? isSpanish
-                ? country.name_es
-                : country.name_en
-            : nextCountry;
-
-        const confirmed = window.confirm(
-            isSpanish
-                ? `¿Estás seguro de que quieres elegir ${countryName}?\n\nUna vez que confirmes esta elección y guardes tu perfil, el país quedará vinculado permanentemente a tu cuenta y no podrás cambiarlo.`
-                : `Are you sure you want to choose ${countryName}?\n\nOnce you confirm this choice and save your profile, the country will be permanently linked to your account and cannot be changed.`,
-        );
-
-        if (!confirmed) {
-            setCountryCode("");
-            return;
-        }
-
-        setCountryCode(nextCountry);
+        setCountryCode(event.target.value);
         setFeedback(null);
     }
 
@@ -281,7 +273,9 @@ export default function ProfileForm({
 
         if (isSaving || !hasChanges) return;
 
-        if (!countryCode) {
+        const submittedCountry = effectiveCountryCode;
+
+        if (!submittedCountry) {
             setFeedback({
                 success: false,
                 message: isSpanish
@@ -291,30 +285,30 @@ export default function ProfileForm({
             return;
         }
 
-        if (countryLocked && countryCode !== savedCountry) {
+        if (
+            displayName.trim().length < 2 ||
+            displayName.trim().length > 40
+        ) {
             setFeedback({
                 success: false,
                 message: isSpanish
-                    ? "Tu país ya está registrado y no se puede cambiar."
-                    : "Your country is already registered and cannot be changed.",
+                    ? "El nombre debe tener entre 2 y 40 caracteres."
+                    : "Your name must contain between 2 and 40 characters.",
             });
             return;
         }
 
-        // Capturamos el formulario antes de iniciar las operaciones asíncronas.
         const formData = new FormData(event.currentTarget);
         const submittedName = displayName.trim();
-        const submittedCountry = countryCode;
-        const shouldSaveProfile = hasProfileChanges;
+        const shouldSaveProfile =
+            submittedName !== savedName ||
+            submittedCountry !== savedCountry;
         const fileToUpload = selectedFile;
 
-        if (shouldSaveProfile) {
-            formData.set("display_name", submittedName);
-            formData.set("country_code", submittedCountry);
-        }
+        formData.set("display_name", submittedName);
+        formData.set("country_code", submittedCountry);
 
         setFeedback(null);
-
         setLoading(shouldSaveProfile);
         setAvatarLoading(Boolean(fileToUpload));
 
@@ -322,17 +316,6 @@ export default function ProfileForm({
         let saveSucceeded = false;
 
         try {
-            if (fileToUpload) {
-                const newAvatarUrl = await uploadAvatar(fileToUpload);
-
-                setAvatarUrl(newAvatarUrl);
-                clearPreview();
-
-                successMessage = isSpanish
-                    ? "Foto de perfil actualizada correctamente."
-                    : "Profile photo updated successfully.";
-            }
-
             if (shouldSaveProfile) {
                 const result = await saveProfile(locale, formData);
 
@@ -349,6 +332,17 @@ export default function ProfileForm({
                 successMessage = result.message;
             }
 
+            if (fileToUpload) {
+                const newAvatarUrl = await uploadAvatar(fileToUpload);
+
+                setAvatarUrl(newAvatarUrl);
+                clearPreview();
+
+                successMessage = isSpanish
+                    ? "Foto de perfil actualizada correctamente."
+                    : "Profile photo updated successfully.";
+            }
+
             saveSucceeded = true;
 
             setFeedback({
@@ -363,7 +357,9 @@ export default function ProfileForm({
             console.error("Error updating profile:", error);
 
             const details =
-                error instanceof Error ? error.message : "Unknown error";
+                error instanceof Error
+                    ? error.message
+                    : "Unknown error";
 
             setFeedback({
                 success: false,
@@ -381,8 +377,64 @@ export default function ProfileForm({
         }
     }
 
+    async function handleDeleteAccount() {
+        const expectedConfirmation = isSpanish
+            ? "ELIMINAR MI CUENTA"
+            : "DELETE MY ACCOUNT";
+
+        if (deleteConfirmation !== expectedConfirmation) {
+            setFeedback({
+                success: false,
+                message: isSpanish
+                    ? 'Escribe exactamente "ELIMINAR MI CUENTA" para confirmar.'
+                    : 'Type exactly "DELETE MY ACCOUNT" to confirm.',
+            });
+            return;
+        }
+
+        const confirmed = window.confirm(
+            isSpanish
+                ? "¿Estás completamente seguro?\n\nSe eliminarán tu cuenta, tu perfil, tu foto y los votos asociados. Esta acción es irreversible y no podrás recuperar tu historial."
+                : "Are you absolutely sure?\n\nYour account, profile, photo, and associated votes will be deleted. This action is irreversible and your history cannot be recovered.",
+        );
+
+        if (!confirmed) return;
+
+        setDeleteLoading(true);
+        setFeedback(null);
+
+        try {
+            const result = await deleteMyAccount(
+                locale,
+                deleteConfirmation,
+            );
+
+            if (!result.success) {
+                setFeedback(result);
+                return;
+            }
+
+            const supabase = createClient();
+            await supabase.auth.signOut();
+
+            router.replace(`/${locale}`);
+            router.refresh();
+        } catch (error) {
+            console.error("Error deleting account:", error);
+
+            setFeedback({
+                success: false,
+                message: isSpanish
+                    ? "Ocurrió un error al eliminar la cuenta. Inténtalo nuevamente."
+                    : "An error occurred while deleting your account. Please try again.",
+            });
+        } finally {
+            setDeleteLoading(false);
+        }
+    }
+
     const selectedCountry = countries.find(
-        (country) => country.code === (savedCountry || countryCode),
+        (country) => country.code === effectiveCountryCode,
     );
 
     const selectedCountryName = selectedCountry
@@ -392,6 +444,10 @@ export default function ProfileForm({
         : "";
 
     const displayedAvatar = previewUrl || avatarUrl;
+
+    const expectedDeleteConfirmation = isSpanish
+        ? "ELIMINAR MI CUENTA"
+        : "DELETE MY ACCOUNT";
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -487,7 +543,8 @@ export default function ProfileForm({
                             ? "¿Cómo quieres aparecer?"
                             : "How should your name appear?"
                     }
-                    className="h-[50px] w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-violet-400/60 focus:ring-2 focus:ring-violet-400/10"
+                    disabled={isSaving}
+                    className="h-[50px] w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-violet-400/60 focus:ring-2 focus:ring-violet-400/10 disabled:opacity-50"
                 />
 
                 <p className="mt-2 text-xs leading-5 text-white/40">
@@ -538,19 +595,31 @@ export default function ProfileForm({
                             id="country_code"
                             name="country_code"
                             required
-                            value={countryCode}
-                            disabled={countryLocked || countryChosen}
+                            value={effectiveCountryCode}
+                            disabled={
+                                isSaving ||
+                                countries.length === 0 ||
+                                hasVoted
+                            }
                             onChange={handleCountryChange}
+                            aria-describedby="country-help"
                             className="h-[50px] w-full appearance-none rounded-xl border border-white/10 bg-[#0d0a16] py-3 pl-4 pr-12 text-sm text-white outline-none transition hover:border-white/20 focus:border-violet-400/60 focus:ring-2 focus:ring-violet-400/10 disabled:cursor-not-allowed disabled:opacity-70"
                         >
                             <option value="" disabled>
-                                {isSpanish ? "Selecciona tu país" : "Select your country"}
+                                {isSpanish
+                                    ? "Selecciona tu país"
+                                    : "Select your country"}
                             </option>
 
                             {countries.map((country) => (
-                                <option key={country.code} value={country.code}>
+                                <option
+                                    key={country.code}
+                                    value={country.code}
+                                >
                                     {country.flag_emoji}{" "}
-                                    {isSpanish ? country.name_es : country.name_en}
+                                    {isSpanish
+                                        ? country.name_es
+                                        : country.name_en}
                                 </option>
                             ))}
                         </select>
@@ -559,62 +628,70 @@ export default function ProfileForm({
                             aria-hidden="true"
                             className="pointer-events-none absolute inset-y-0 right-0 flex w-11 items-center justify-center text-white/60"
                         >
-                            {countryLocked || countryChosen ? (
-                                <LockKeyhole size={17} />
-                            ) : (
-                                <ChevronDown size={18} strokeWidth={1.8} />
-                            )}
+                            <ChevronDown size={18} strokeWidth={1.8} />
                         </div>
                     </div>
 
-                    {countryLocked ? (
-                        <p className="mt-2 flex items-start gap-1.5 text-xs leading-5 text-white/40">
+                    <p
+                        id="country-help"
+                        className="mt-2 text-xs leading-5 text-white/40"
+                    >
+                        {hasVoted
+                            ? isSpanish
+                                ? "Tu país quedó fijado al emitir tu primer voto y ya no se puede cambiar en esta cuenta."
+                                : "Your country was locked when you cast your first vote and can no longer be changed for this account."
+                            : isSpanish
+                                ? "Puedes corregir tu país hasta emitir tu primer voto. Después quedará fijado para esta cuenta."
+                                : "You can correct your country until you cast your first vote. After that, it will be locked for this account."}
+                    </p>
+
+                    {hasVoted && (
+                        <div className="mt-3 flex items-start gap-2 rounded-xl border border-violet-300/15 bg-violet-400/[0.06] p-3 text-xs leading-5 text-violet-200/80">
                             <ShieldCheck
-                                size={14}
-                                className="mt-0.5 shrink-0 text-violet-300"
-                            />
-                            <span>
-                                {isSpanish
-                                    ? "País vinculado a tu perfil. No editable."
-                                    : "Country linked to your profile. Not editable."}
-                            </span>
-                        </p>
-                    ) : countryChosen ? (
-                        <p className="mt-2 flex items-start gap-1.5 text-xs leading-5 text-amber-200/80">
-                            <LockKeyhole
-                                size={14}
+                                size={16}
                                 className="mt-0.5 shrink-0"
                             />
                             <span>
                                 {isSpanish
-                                    ? `${selectedCountryName} seleccionado. Guarda tu perfil para confirmar la elección permanente.`
-                                    : `${selectedCountryName} selected. Save your profile to confirm this permanent choice.`}
+                                    ? "Esta medida mantiene la consistencia de los rankings por país."
+                                    : "This keeps country rankings consistent."}
                             </span>
-                        </p>
-                    ) : (
-                        <p className="mt-2 text-xs leading-5 text-white/40">
-                            {isSpanish
-                                ? "Elige con cuidado: una vez guardado, no podrás cambiar tu país."
-                                : "Choose carefully: once saved, you won't be able to change your country."}
-                        </p>
+                        </div>
                     )}
+
+                    {!hasVoted &&
+                        countryCode !== savedCountry &&
+                        selectedCountryName && (
+                            <p className="mt-2 text-xs leading-5 text-violet-200/80">
+                                {isSpanish
+                                    ? `Nuevo país seleccionado: ${selectedCountryName}. Guarda los cambios para aplicarlo.`
+                                    : `New country selected: ${selectedCountryName}. Save your changes to apply it.`}
+                            </p>
+                        )}
                 </div>
             </div>
 
-            {/* Mensaje temporal */}
+            {/* Mensaje de resultado */}
             {feedback && (
                 <div
                     role={feedback.success ? "status" : "alert"}
                     aria-live="polite"
-                    className={`flex items-start gap-3 rounded-xl border p-4 text-sm leading-6 ${feedback.success
-                        ? "border-emerald-400/20 bg-emerald-400/[0.07] text-emerald-200"
-                        : "border-rose-400/20 bg-rose-400/[0.07] text-rose-200"
-                        }`}
+                    className={`flex items-start gap-3 rounded-xl border p-4 text-sm leading-6 ${
+                        feedback.success
+                            ? "border-emerald-400/20 bg-emerald-400/[0.07] text-emerald-200"
+                            : "border-rose-400/20 bg-rose-400/[0.07] text-rose-200"
+                    }`}
                 >
                     {feedback.success ? (
-                        <CheckCircle2 size={18} className="mt-1 shrink-0" />
+                        <CheckCircle2
+                            size={18}
+                            className="mt-1 shrink-0"
+                        />
                     ) : (
-                        <AlertCircle size={18} className="mt-1 shrink-0" />
+                        <AlertCircle
+                            size={18}
+                            className="mt-1 shrink-0"
+                        />
                     )}
 
                     <span>{feedback.message}</span>
@@ -624,16 +701,23 @@ export default function ProfileForm({
             {/* Guardar cambios */}
             <button
                 type="submit"
-                disabled={isSaving || !hasChanges || countries.length === 0}
+                disabled={
+                    isSaving ||
+                    !hasChanges ||
+                    countries.length === 0
+                }
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet-500 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
             >
-                {isSaving ? (
-                    <LoaderCircle size={17} className="animate-spin" />
+                {loading || avatarLoading ? (
+                    <LoaderCircle
+                        size={17}
+                        className="animate-spin"
+                    />
                 ) : (
                     <Save size={17} />
                 )}
 
-                {isSaving
+                {loading || avatarLoading
                     ? isSpanish
                         ? "Guardando..."
                         : "Saving..."
@@ -641,6 +725,81 @@ export default function ProfileForm({
                         ? "Guardar cambios"
                         : "Save changes"}
             </button>
+
+            {/* Zona de peligro: eliminar cuenta */}
+            <div className="mt-10 border-t border-rose-400/20 pt-8">
+                <div className="rounded-2xl border border-rose-400/20 bg-rose-400/[0.04] p-5 sm:p-6">
+                    <div className="flex items-start gap-3">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-rose-400/20 bg-rose-400/10 text-rose-300">
+                            <Trash2 size={21} />
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                            <h3 className="font-semibold text-rose-200">
+                                {isSpanish
+                                    ? "Zona de peligro"
+                                    : "Danger zone"}
+                            </h3>
+
+                            <p className="mt-2 text-sm leading-6 text-white/60">
+                                {isSpanish
+                                    ? "Eliminar tu cuenta es permanente. Se eliminarán tu perfil, tu foto y los votos asociados a tu usuario. Esta acción no se puede deshacer."
+                                    : "Deleting your account is permanent. Your profile, photo, and votes associated with your user will be deleted. This action cannot be undone."}
+                            </p>
+
+                            <label
+                                htmlFor="delete-account-confirmation"
+                                className="mt-5 block text-sm font-medium text-white/80"
+                            >
+                                {isSpanish
+                                    ? 'Escribe "ELIMINAR MI CUENTA" para confirmar'
+                                    : 'Type "DELETE MY ACCOUNT" to confirm'}
+                            </label>
+
+                            <input
+                                id="delete-account-confirmation"
+                                type="text"
+                                autoComplete="off"
+                                value={deleteConfirmation}
+                                onChange={(event) =>
+                                    setDeleteConfirmation(event.target.value)
+                                }
+                                disabled={isSaving}
+                                placeholder={expectedDeleteConfirmation}
+                                className="mt-2 h-[50px] w-full rounded-xl border border-rose-400/20 bg-black/20 px-4 text-sm text-white outline-none placeholder:text-white/25 focus:border-rose-400/50 disabled:opacity-50"
+                            />
+
+                            <button
+                                type="button"
+                                onClick={handleDeleteAccount}
+                                disabled={
+                                    isSaving ||
+                                    deleteConfirmation !==
+                                        expectedDeleteConfirmation
+                                }
+                                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm font-semibold text-rose-200 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
+                            >
+                                {deleteLoading ? (
+                                    <LoaderCircle
+                                        size={17}
+                                        className="animate-spin"
+                                    />
+                                ) : (
+                                    <Trash2 size={17} />
+                                )}
+
+                                {deleteLoading
+                                    ? isSpanish
+                                        ? "Eliminando cuenta..."
+                                        : "Deleting account..."
+                                    : isSpanish
+                                        ? "Eliminar mi cuenta definitivamente"
+                                        : "Permanently delete my account"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </form>
     );
 }
