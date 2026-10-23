@@ -114,7 +114,6 @@ export default function VotePanel({
     const nextVoteTime = new Date(status.next_vote_at).getTime();
     const remaining = nextVoteTime - Date.now();
 
-    // Consultar de nuevo cuando termine el periodo de espera.
     if (remaining <= 0) {
       void refreshStatus();
       return;
@@ -201,6 +200,10 @@ export default function VotePanel({
         })
       : null;
 
+  const flagCode = /^[A-Za-z]{2}$/.test(countryFlag)
+    ? countryFlag.toLowerCase()
+    : "";
+
   return (
     <div className="rounded-3xl border border-white/10 bg-[#13101e] p-6 sm:p-9">
       <div className="flex items-center gap-3">
@@ -227,11 +230,33 @@ export default function VotePanel({
         </p>
 
         <div className="mt-3 flex items-center gap-3">
-          <span className="text-3xl" aria-hidden="true">
-            {countryFlag}
-          </span>
+          {flagCode ? (
+            <img
+              src={`https://flagcdn.com/${flagCode}.svg`}
+              alt={
+                countryName
+                  ? isSpanish
+                    ? `Bandera de ${countryName}`
+                    : `Flag of ${countryName}`
+                  : ""
+              }
+              width={48}
+              height={32}
+              className="block h-auto max-h-8 w-12 shrink-0 rounded-sm object-contain"
+            />
+          ) : (
+            <span
+              className="flex h-8 w-12 shrink-0 items-center justify-center text-sm text-white/40"
+              aria-hidden="true"
+            >
+              —
+            </span>
+          )}
 
-          <span className="text-xl font-semibold">{countryName}</span>
+          <span className="text-xl font-semibold">
+            {countryName ||
+              (isSpanish ? "País no seleccionado" : "No country selected")}
+          </span>
         </div>
 
         <p className="mt-3 text-sm leading-6 text-white/50">
@@ -266,10 +291,7 @@ export default function VotePanel({
 
           {formattedNextVote && (
             <div className="mt-4 flex items-center gap-3 border-t border-amber-200/10 pt-4">
-              <Clock3
-                size={19}
-                className="shrink-0 text-amber-200/80"
-              />
+              <Clock3 size={19} className="shrink-0 text-amber-200/80" />
 
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-white/45">
@@ -283,9 +305,7 @@ export default function VotePanel({
                 </p>
 
                 <p className="mt-1 text-xs text-white/40">
-                  {isSpanish
-                    ? "Hora de Perú"
-                    : "Peru time"}
+                  {isSpanish ? "Hora de Perú" : "Peru time"}
                 </p>
               </div>
             </div>
@@ -298,9 +318,7 @@ export default function VotePanel({
           href={`/${locale}/account`}
           className="mt-5 inline-flex rounded-xl border border-violet-300/20 px-4 py-3 text-sm font-semibold text-violet-200 transition hover:bg-violet-400/10"
         >
-          {isSpanish
-            ? "Elegir país en mi perfil"
-            : "Choose a country in my profile"}
+          {isSpanish ? "Elegir país en mi perfil" : "Choose a country in my profile"}
         </a>
       )}
 

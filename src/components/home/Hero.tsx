@@ -123,14 +123,14 @@ export default async function Hero({ locale }: HeroProps) {
   const podiumOrder =
     countries.length >= 3
       ? [
-          { country: countries[1], position: 2 },
-          { country: countries[0], position: 1 },
-          { country: countries[2], position: 3 },
-        ]
+        { country: countries[1], position: 2 },
+        { country: countries[0], position: 1 },
+        { country: countries[2], position: 3 },
+      ]
       : countries.map((country, index) => ({
-          country,
-          position: index + 1,
-        }));
+        country,
+        position: index + 1,
+      }));
 
   return (
     <section className="relative isolate overflow-hidden">
@@ -227,13 +227,12 @@ export default async function Hero({ locale }: HeroProps) {
                   <Link
                     key={country.code}
                     href={`/${locale}/ranking/${country.slug}`}
-                    className={`flex w-1/3 min-w-0 flex-col items-center rounded-t-2xl border px-2 pt-5 text-center transition hover:-translate-y-1 ${
-                      position === 1
+                    className={`flex w-1/3 min-w-0 flex-col items-center rounded-t-2xl border px-2 pt-5 text-center transition hover:-translate-y-1 ${position === 1
                         ? "min-h-52 border-violet-300/30 bg-gradient-to-b from-violet-400/20 to-violet-950/20"
                         : position === 2
                           ? "min-h-40 border-slate-300/15 bg-gradient-to-b from-slate-300/[0.08] to-transparent"
                           : "min-h-32 border-orange-300/15 bg-gradient-to-b from-orange-300/[0.07] to-transparent"
-                    }`}
+                      }`}
                   >
                     {position === 1 ? (
                       <Crown
@@ -243,16 +242,26 @@ export default async function Hero({ locale }: HeroProps) {
                     ) : (
                       <Medal
                         size={19}
-                        className={`mb-2 ${
-                          position === 2
+                        className={`mb-2 ${position === 2
                             ? "text-slate-300"
                             : "text-orange-300"
-                        }`}
+                          }`}
                       />
                     )}
 
-                    <span className="text-3xl sm:text-4xl">
-                      {country.flag_emoji}
+                    <span className="mt-1 flex h-9 w-12 shrink-0 items-center justify-center overflow-hidden rounded-sm">
+                      <img
+                        src={`https://flagcdn.com/${country.code.toLowerCase()}.svg`}
+                        alt={
+                          isSpanish
+                            ? `Bandera de ${country.name_es}`
+                            : `Flag of ${country.name_en}`
+                        }
+                        width={48}
+                        height={32}
+                        loading="lazy"
+                        className="block h-auto max-h-9 w-full object-contain"
+                      />
                     </span>
 
                     <span className="mt-2 line-clamp-2 w-full text-xs font-semibold text-white sm:text-sm">

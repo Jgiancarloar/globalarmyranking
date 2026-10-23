@@ -101,9 +101,8 @@ export async function generateMetadata({
     .join(" ");
 
   return {
-    title: `${countryName} | ${
-      locale === "es" ? "Ranking global" : "Global ranking"
-    }`,
+    title: `${countryName} | ${locale === "es" ? "Ranking global" : "Global ranking"
+      }`,
   };
 }
 
@@ -185,13 +184,21 @@ async function CountryContent({ params }: Props) {
 
           <div className="relative">
             <div className="flex flex-wrap items-center gap-4">
-              <span
-                className="text-5xl sm:text-7xl"
-                role="img"
-                aria-label={countryName}
-              >
-                {country.flag_emoji}
+
+              <span className="flex h-14 w-20 shrink-0 items-center justify-center overflow-hidden rounded-md sm:h-20 sm:w-28">
+                <img
+                  src={`https://flagcdn.com/${country.code.toLowerCase()}.svg`}
+                  alt={
+                    isSpanish
+                      ? `Bandera de ${country.name_es}`
+                      : `Flag of ${country.name_en}`
+                  }
+                  width={112}
+                  height={75}
+                  className="block h-auto max-h-full w-full object-contain"
+                />
               </span>
+
 
               <div>
                 <p className="flex items-center gap-2 text-sm font-medium text-violet-300">
@@ -277,26 +284,24 @@ async function CountryContent({ params }: Props) {
                   >
                     {/* Posición */}
                     <span
-                      className={`w-7 shrink-0 text-center text-sm font-bold tabular-nums ${
-                        index === 0
+                      className={`w-7 shrink-0 text-center text-sm font-bold tabular-nums ${index === 0
                           ? "text-amber-300"
                           : index === 1
                             ? "text-slate-300"
                             : index === 2
                               ? "text-orange-300"
                               : "text-white/35"
-                      }`}
+                        }`}
                     >
                       {index + 1}
                     </span>
 
                     {/* Foto de perfil */}
                     <div
-                      className={`flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full ${
-                        isPodium
+                      className={`flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full ${isPodium
                           ? "border border-violet-300/30 bg-violet-400/15 text-violet-200"
                           : "border border-white/10 bg-white/[0.05] text-white/60"
-                      }`}
+                        }`}
                     >
                       {voter.avatar_url ? (
                         <Image

@@ -77,8 +77,7 @@ export default async function AccountPage({ params }: Props) {
 
   const votes: Vote[] = votesData ?? [];
 
-  // Bloqueo del país: comprobar la existencia de cualquier voto,
-  // independientemente del límite del historial.
+  // Comprobar si existe algún voto, independientemente del límite del historial.
   const { data: firstVote, error: firstVoteError } = await supabase
     .from("votes")
     .select("id")
@@ -86,8 +85,7 @@ export default async function AccountPage({ params }: Props) {
     .limit(1)
     .maybeSingle();
 
-  // Si no podemos verificar los votos, bloqueamos el selector
-  // de forma conservadora hasta que se pueda comprobar.
+  // Si no podemos verificar los votos, bloqueamos el selector de forma conservadora.
   const hasVoted = Boolean(firstVote) || Boolean(firstVoteError);
 
   if (profileError) {
@@ -284,7 +282,9 @@ export default async function AccountPage({ params }: Props) {
                       : country.name_en
                     : vote.country_code;
 
-                  const flag = country?.flag_emoji ?? "🌎";
+                  const flagCode = /^[A-Za-z]{2}$/.test(vote.country_code)
+                    ? vote.country_code.toLowerCase()
+                    : null;
 
                   return (
                     <div
@@ -301,8 +301,32 @@ export default async function AccountPage({ params }: Props) {
                         </div>
 
                         <div className="min-w-0">
-                          <p className="font-semibold">
-                            {flag} {countryName}
+                          <p className="flex items-center gap-2 font-semibold">
+                            {flagCode ? (
+                              <img
+                                src={`https://flagcdn.com/${flagCode}.svg`}
+                                alt={
+                                  country
+                                    ? isSpanish
+                                      ? `Bandera de ${country.name_es}`
+                                      : `Flag of ${country.name_en}`
+                                    : vote.country_code
+                                }
+                                width={36}
+                                height={24}
+                                loading="lazy"
+                                className="block h-auto max-h-5 w-7 shrink-0 rounded-sm object-contain"
+                              />
+                            ) : (
+                              <span
+                                className="flex h-5 w-7 shrink-0 items-center justify-center text-xs text-white/40"
+                                aria-hidden="true"
+                              >
+                                —
+                              </span>
+                            )}
+
+                            <span>{countryName}</span>
                           </p>
 
                           <p className="mt-1 text-xs text-white/45">

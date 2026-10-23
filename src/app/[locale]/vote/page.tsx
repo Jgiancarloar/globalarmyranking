@@ -50,12 +50,12 @@ export default async function VotePage({ params }: Props) {
   const countryCode = profile?.country_code ?? "";
 
   let countryName = "";
-  let countryFlag = "🌎";
+  let countryCodeForFlag = "";
 
   if (countryCode) {
     const { data: country, error: countryError } = await supabase
       .from("countries")
-      .select("name_en, name_es, flag_emoji")
+      .select("code, name_en, name_es")
       .eq("code", countryCode)
       .eq("is_active", true)
       .maybeSingle();
@@ -66,7 +66,7 @@ export default async function VotePage({ params }: Props) {
 
     if (country) {
       countryName = isSpanish ? country.name_es : country.name_en;
-      countryFlag = country.flag_emoji;
+      countryCodeForFlag = country.code;
     }
   }
 
@@ -119,7 +119,7 @@ export default async function VotePage({ params }: Props) {
           <VotePanel
             locale={locale}
             countryName={countryName}
-            countryFlag={countryFlag}
+            countryFlag={countryCodeForFlag}
             initialStatus={initialStatus}
           />
         )}

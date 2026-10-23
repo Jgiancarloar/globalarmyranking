@@ -190,14 +190,19 @@ export default async function RankingPreview({ locale }: Props) {
                   {index + 1}
                 </span>
 
-                <span
-                  className="shrink-0 text-2xl"
-                  role="img"
-                  aria-label={
-                    isSpanish ? country.name_es : country.name_en
-                  }
-                >
-                  {country.flag_emoji}
+                <span className="flex h-7 w-9 shrink-0 items-center justify-center overflow-hidden rounded-sm">
+                  <img
+                    src={`https://flagcdn.com/${country.code.toLowerCase()}.svg`}
+                    alt={
+                      isSpanish
+                        ? `Bandera de ${country.name_es}`
+                        : `Flag of ${country.name_en}`
+                    }
+                    width={36}
+                    height={24}
+                    loading="lazy"
+                    className="block h-auto max-h-7 w-full object-contain"
+                  />
                 </span>
 
                 <span className="min-w-0 flex-1">
