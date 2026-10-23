@@ -82,9 +82,14 @@ export default function Navbar({
             onClick={() => setMobileMenuOpen(false)}
             className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-sm font-semibold text-white/80 transition hover:border-violet-300/30 hover:bg-violet-400/10 hover:text-white"
         >
-            <span aria-hidden="true">
-                {isSpanish ? "🇺🇸" : "🇪🇸"}
-            </span>
+            <img
+                src={`https://flagcdn.com/${nextLocale === "en" ? "us" : "es"}.svg`}
+                alt=""
+                aria-hidden="true"
+                width={24}
+                height={16}
+                className="block h-4 w-6 shrink-0 rounded-sm object-cover"
+            />
 
             <span>{nextLocale.toUpperCase()}</span>
         </Link>
@@ -147,11 +152,10 @@ export default function Navbar({
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className={`text-sm font-medium transition ${
-                                    isActive
+                                className={`text-sm font-medium transition ${isActive
                                         ? "text-violet-300"
                                         : "text-white/65 hover:text-white"
-                                }`}
+                                    }`}
                             >
                                 {item.label}
                             </Link>
@@ -218,11 +222,10 @@ export default function Navbar({
                                     onClick={() =>
                                         setMobileMenuOpen(false)
                                     }
-                                    className={`rounded-xl px-4 py-3 text-sm font-medium transition ${
-                                        isActive
+                                    className={`rounded-xl px-4 py-3 text-sm font-medium transition ${isActive
                                             ? "bg-violet-400/10 text-violet-300"
                                             : "text-white/70 hover:bg-white/[0.04] hover:text-white"
-                                    }`}
+                                        }`}
                                 >
                                     {item.label}
                                 </Link>
