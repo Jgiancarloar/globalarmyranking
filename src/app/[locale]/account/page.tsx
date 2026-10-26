@@ -216,6 +216,7 @@ export default async function AccountPage({ params }: Props) {
             )}
           </div>
 
+
           {/* Historial de votos */}
           <div className="border-t border-white/[0.08] p-6 sm:p-9">
             <div className="flex items-start gap-3">
@@ -259,8 +260,8 @@ export default async function AccountPage({ params }: Props) {
 
                 <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-white/45">
                   {isSpanish
-                    ? "Cuando emitas tu primer voto, aparecerá aquí junto con el país y la fecha."
-                    : "Once you cast your first vote, it will appear here with its country and date."}
+                    ? "Cuando emitas tu primer voto, aparecerá aquí junto con la fecha."
+                    : "Once you cast your first vote, it will appear here with its date."}
                 </p>
 
                 <Link
@@ -272,86 +273,49 @@ export default async function AccountPage({ params }: Props) {
                 </Link>
               </div>
             ) : (
-              <div className="mt-6 space-y-3">
-                {votes.map((vote) => {
-                  const country = countryByCode.get(vote.country_code);
-
-                  const countryName = country
-                    ? isSpanish
-                      ? country.name_es
-                      : country.name_en
-                    : vote.country_code;
-
-                  const flagCode = /^[A-Za-z]{2}$/.test(vote.country_code)
-                    ? vote.country_code.toLowerCase()
-                    : null;
-
-                  return (
-                    <div
-                      key={vote.id}
-                      className="flex flex-col gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"
-                    >
-                      <div className="flex min-w-0 items-center gap-3">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-400/10 text-violet-300">
-                          {vote.vote_type === "free" ? (
-                            <Heart size={19} />
-                          ) : (
-                            <TicketCheck size={19} />
-                          )}
-                        </div>
-
-                        <div className="min-w-0">
-                          <p className="flex items-center gap-2 font-semibold">
-                            {flagCode ? (
-                              <img
-                                src={`https://flagcdn.com/${flagCode}.svg`}
-                                alt={
-                                  country
-                                    ? isSpanish
-                                      ? `Bandera de ${country.name_es}`
-                                      : `Flag of ${country.name_en}`
-                                    : vote.country_code
-                                }
-                                width={36}
-                                height={24}
-                                loading="lazy"
-                                className="block h-auto max-h-5 w-7 shrink-0 rounded-sm object-contain"
-                              />
-                            ) : (
-                              <span
-                                className="flex h-5 w-7 shrink-0 items-center justify-center text-xs text-white/40"
-                                aria-hidden="true"
-                              >
-                                —
-                              </span>
-                            )}
-
-                            <span>{countryName}</span>
-                          </p>
-
-                          <p className="mt-1 text-xs text-white/45">
-                            {vote.vote_type === "free"
-                              ? isSpanish
-                                ? "Voto gratuito"
-                                : "Free vote"
-                              : isSpanish
-                                ? "Voto pagado"
-                                : "Paid vote"}
-                          </p>
-                        </div>
+              <div className="mt-6 overflow-hidden rounded-2xl border border-white/[0.08]">
+                {votes.map((vote, index) => (
+                  <div
+                    key={vote.id}
+                    className={`flex items-center justify-between gap-4 p-4 sm:px-5 ${index > 0 ? "border-t border-white/[0.08]" : ""
+                      }`}
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-400/10 text-violet-300">
+                        {vote.vote_type === "free" ? (
+                          <Heart size={18} />
+                        ) : (
+                          <TicketCheck size={18} />
+                        )}
                       </div>
 
-                      <div className="flex items-center gap-2 text-xs text-white/45 sm:justify-end">
-                        <Clock3 size={14} className="shrink-0" />
-                        <time dateTime={vote.created_at}>
-                          {dateFormatter.format(new Date(vote.created_at))}
-                        </time>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-white">
+                          {vote.vote_type === "free"
+                            ? isSpanish
+                              ? "Voto gratuito"
+                              : "Free vote"
+                            : isSpanish
+                              ? "Voto pagado"
+                              : "Paid vote"}
+                        </p>
+
+                        <p className="mt-1 text-xs text-white/45">
+                          {isSpanish ? "Voto registrado" : "Vote recorded"}
+                        </p>
                       </div>
                     </div>
-                  );
-                })}
 
-                <p className="pt-2 text-xs leading-5 text-white/35">
+                    <div className="flex shrink-0 items-center gap-2 text-xs text-white/50">
+                      <Clock3 size={14} className="shrink-0" />
+                      <time dateTime={vote.created_at}>
+                        {dateFormatter.format(new Date(vote.created_at))}
+                      </time>
+                    </div>
+                  </div>
+                ))}
+
+                <p className="border-t border-white/[0.08] px-4 py-3 text-xs text-white/35 sm:px-5">
                   {isSpanish
                     ? "Mostrando tus últimos 20 votos."
                     : "Showing your latest 20 votes."}

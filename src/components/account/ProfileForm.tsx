@@ -544,7 +544,7 @@ export default function ProfileForm({
                             : "How should your name appear?"
                     }
                     disabled={isSaving}
-                    className="h-[50px] w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-violet-400/60 focus:ring-2 focus:ring-violet-400/10 disabled:opacity-50"
+                    className="h-[50px] w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 text-base text-white outline-none transition placeholder:text-white/30 focus:border-violet-400/60 focus:ring-2 focus:ring-violet-400/10 disabled:opacity-50"
                 />
 
                 <p className="mt-2 text-xs leading-5 text-white/40">
@@ -603,7 +603,7 @@ export default function ProfileForm({
                             }
                             onChange={handleCountryChange}
                             aria-describedby="country-help"
-                            className="h-[50px] w-full appearance-none rounded-xl border border-white/10 bg-[#0d0a16] py-3 pl-4 pr-12 text-sm text-white outline-none transition hover:border-white/20 focus:border-violet-400/60 focus:ring-2 focus:ring-violet-400/10 disabled:cursor-not-allowed disabled:opacity-70"
+                            className="h-[50px] w-full appearance-none rounded-xl border border-white/10 bg-[#0d0a16] py-3 pl-4 pr-12 text-base text-white outline-none transition hover:border-white/20 focus:border-violet-400/60 focus:ring-2 focus:ring-violet-400/10 disabled:cursor-not-allowed disabled:opacity-70"
                         >
                             <option value="" disabled>
                                 {isSpanish
@@ -676,11 +676,10 @@ export default function ProfileForm({
                 <div
                     role={feedback.success ? "status" : "alert"}
                     aria-live="polite"
-                    className={`flex items-start gap-3 rounded-xl border p-4 text-sm leading-6 ${
-                        feedback.success
+                    className={`flex items-start gap-3 rounded-xl border p-4 text-sm leading-6 ${feedback.success
                             ? "border-emerald-400/20 bg-emerald-400/[0.07] text-emerald-200"
                             : "border-rose-400/20 bg-rose-400/[0.07] text-rose-200"
-                    }`}
+                        }`}
                 >
                     {feedback.success ? (
                         <CheckCircle2
@@ -766,7 +765,7 @@ export default function ProfileForm({
                                 }
                                 disabled={isSaving}
                                 placeholder={expectedDeleteConfirmation}
-                                className="mt-2 h-[50px] w-full rounded-xl border border-rose-400/20 bg-black/20 px-4 text-sm text-white outline-none placeholder:text-white/25 focus:border-rose-400/50 disabled:opacity-50"
+                                className="mt-2 h-[50px] w-full rounded-xl border border-rose-400/20 bg-black/20 px-4 text-base text-white outline-none placeholder:text-white/25 focus:border-rose-400/50 disabled:opacity-50"
                             />
 
                             <button
@@ -775,7 +774,7 @@ export default function ProfileForm({
                                 disabled={
                                     isSaving ||
                                     deleteConfirmation !==
-                                        expectedDeleteConfirmation
+                                    expectedDeleteConfirmation
                                 }
                                 className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm font-semibold text-rose-200 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
                             >
